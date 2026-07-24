@@ -50,7 +50,7 @@ async def get_authenticated_client(
     Raises:
         RuntimeError: If authentication fails.
     """
-    authenticated = await client.authenticate()
+    authenticated = await client.login()
     if not authenticated:
         logger.error("Failed to authenticate portal client")
         raise RuntimeError("Portal authentication failed")

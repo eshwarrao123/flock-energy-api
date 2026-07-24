@@ -16,6 +16,12 @@ from app.models import (
     PaginatedMeters,
     Transformer,
 )
+from app.parser import (
+    parse_meters_list,
+    parse_meter_detail,
+    parse_consumption,
+    parse_transformers,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +32,12 @@ router = APIRouter(prefix="/api/v1", tags=["meters"])
     "/health",
     summary="Health check",
     description="Check service health and portal connectivity.",
+    responses={
+        200: {
+            "description": "Service is healthy",
+            "content": {"application/json": {"example": {"status": "healthy", "version": "1.0.0", "portal_reachable": False}}},
+        },
+    },
 )
 async def health_check() -> dict[str, Any]:
     """Return service health status.
@@ -45,6 +57,16 @@ async def health_check() -> dict[str, Any]:
     response_model=PaginatedMeters,
     summary="List meters",
     description="Retrieve a paginated list of meters from the portal.",
+    responses={
+        200: {
+            "description": "Paginated list of meters",
+            "content": {"application/json": {"example": {"total": 150, "page": 1, "page_size": 25, "items": []}}},
+        },
+        502: {
+            "description": "Portal unreachable",
+            "content": {"application/json": {"example": {"error": "portal_error", "message": "Connection refused"}}},
+        },
+    },
 )
 async def list_meters(
     page: int = Query(1, ge=1, description="Page number"),
@@ -65,7 +87,8 @@ async def list_meters(
         HTTPException: If the portal is unreachable or returns an error.
     """
     try:
-        meters = await client.fetch_meter_list(page=page, page_size=page_size)
+        html = await client.get_meters_html(page=page)
+        meters = parse_meters_list(html)
         total = len(meters)
 
         start = (page - 1) * page_size
@@ -93,6 +116,17 @@ async def list_meters(
     response_model=MeterDetail,
     summary="Get meter details",
     description="Retrieve detailed information for a specific meter.",
+    responses={
+        200: {
+            "description": "Meter detail information",
+        },
+        404: {
+            "description": "Meter not found",
+        },
+        502: {
+            "description": "Portal unreachable",
+        },
+    },
 )
 async def get_meter(
     meter_id: str,
@@ -111,16 +145,8 @@ async def get_meter(
         HTTPException: If the meter is not found or portal is unreachable.
     """
     try:
-        html = await client.fetch_meter_detail(meter_id)
-        # TODO: Parse meter detail from HTML
-        return MeterDetail(
-            meter_id=meter_id,
-            serial_number="UNKNOWN",
-            make="Unknown",
-            phase="Unknown",
-            status="Installed",
-            dt_id="UNKNOWN",
-        )
+        html = await client.get_meter_detail_html(meter_id)
+        return parse_meter_detail(html, meter_id)
     except HTTPException:
         raise
     except Exception as exc:
@@ -132,23 +158,27 @@ async def get_meter(
 
 
 @router.get(
-    "/meters/{meter_id}/readings",
+    "/meters/{meter_id}/consumption",
     response_model=list[ConsumptionReading],
-    summary="Get meter readings",
+    summary="Get meter consumption",
     description="Retrieve consumption readings for a specific meter.",
+    responses={
+        200: {
+            "description": "List of consumption readings",
+        },
+        502: {
+            "description": "Portal unreachable",
+        },
+    },
 )
-async def get_meter_readings(
+async def get_meter_consumption(
     meter_id: str,
-    from_date: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
-    to_date: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
     client: UrjaPortalClient = Depends(get_portal_client),
 ) -> list[ConsumptionReading]:
     """Retrieve consumption readings for a specific meter.
 
     Args:
         meter_id: The unique meter identifier.
-        from_date: Optional start date filter.
-        to_date: Optional end date filter.
         client: Portal HTTP client.
 
     Returns:
@@ -158,17 +188,12 @@ async def get_meter_readings(
         HTTPException: If the portal is unreachable or returns an error.
     """
     try:
-        html = await client.fetch_consumption_data(
-            meter_id,
-            from_date or "2026-01-01",
-            to_date or "2026-12-31",
-        )
-        # TODO: Parse consumption readings from HTML
-        return []
+        html = await client.get_consumption_html(meter_id)
+        return parse_consumption(html)
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Failed to fetch readings for meter %s: %s", meter_id, exc)
+        logger.error("Failed to fetch consumption for meter %s: %s", meter_id, exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"error": "portal_error", "message": str(exc)},
@@ -176,39 +201,82 @@ async def get_meter_readings(
 
 
 @router.get(
-    "/meters/{meter_id}/transformer",
-    response_model=Transformer,
-    summary="Get transformer info",
-    description="Retrieve transformer information for a specific meter.",
+    "/transformers",
+    response_model=list[Transformer],
+    summary="List transformers",
+    description="Retrieve all transformers from the portal.",
+    responses={
+        200: {
+            "description": "List of transformers",
+        },
+        502: {
+            "description": "Portal unreachable",
+        },
+    },
 )
-async def get_meter_transformer(
-    meter_id: str,
+async def list_transformers(
     client: UrjaPortalClient = Depends(get_portal_client),
-) -> Transformer:
-    """Retrieve transformer information for a specific meter.
+) -> list[Transformer]:
+    """Retrieve all transformers from the portal.
 
     Args:
-        meter_id: The unique meter identifier.
         client: Portal HTTP client.
 
     Returns:
-        Transformer: Transformer details.
+        list[Transformer]: List of transformer objects.
 
     Raises:
-        HTTPException: If the transformer info is not found or portal is unreachable.
+        HTTPException: If the portal is unreachable or returns an error.
     """
     try:
-        html = await client.fetch_meter_detail(meter_id)
-        # TODO: Parse transformer info from HTML
-        return Transformer(
-            transformer_id="UNKNOWN",
-            name="Unknown",
-            meter_count=0,
-        )
+        html = await client.get_transformers_html()
+        return parse_transformers(html)
     except HTTPException:
         raise
     except Exception as exc:
-        logger.error("Failed to fetch transformer for meter %s: %s", meter_id, exc)
+        logger.error("Failed to fetch transformers: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": "portal_error", "message": str(exc)},
+        ) from exc
+
+
+@router.get(
+    "/hierarchy",
+    response_model=list[Transformer],
+    summary="Get meter hierarchy",
+    description="Retrieve the transformer-to-meter hierarchy from the portal.",
+    responses={
+        200: {
+            "description": "Hierarchy of transformers and their meters",
+        },
+        502: {
+            "description": "Portal unreachable",
+        },
+    },
+)
+async def get_hierarchy(
+    client: UrjaPortalClient = Depends(get_portal_client),
+) -> list[Transformer]:
+    """Retrieve the transformer-to-meter hierarchy.
+
+    Args:
+        client: Portal HTTP client.
+
+    Returns:
+        list[Transformer]: List of transformers with associated meters.
+
+    Raises:
+        HTTPException: If the portal is unreachable or returns an error.
+    """
+    try:
+        html = await client.get_transformers_html()
+        transformers = parse_transformers(html)
+        return transformers
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error("Failed to fetch hierarchy: %s", exc)
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail={"error": "portal_error", "message": str(exc)},

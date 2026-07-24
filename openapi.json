@@ -1,0 +1,666 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Flock Energy - Urja Meter Ops API",
+    "description": "Production-grade FastAPI service wrapping the legacy Urja Meter Ops portal.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "Health check",
+        "description": "Check service health and portal connectivity.",
+        "operationId": "health_check_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Check Api V1 Health Get"
+                },
+                "example": {
+                  "status": "healthy",
+                  "version": "1.0.0",
+                  "portal_reachable": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meters": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "List meters",
+        "description": "Retrieve a paginated list of meters from the portal.",
+        "operationId": "list_meters_api_v1_meters_get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number",
+              "default": 1,
+              "title": "Page"
+            },
+            "description": "Page number"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "description": "Items per page",
+              "default": 25,
+              "title": "Page Size"
+            },
+            "description": "Items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of meters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedMeters"
+                },
+                "example": {
+                  "total": 150,
+                  "page": 1,
+                  "page_size": 25,
+                  "items": []
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Portal unreachable",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "portal_error",
+                  "message": "Connection refused"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meters/{meter_id}": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "Get meter details",
+        "description": "Retrieve detailed information for a specific meter.",
+        "operationId": "get_meter_api_v1_meters__meter_id__get",
+        "parameters": [
+          {
+            "name": "meter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Meter detail information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeterDetail"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Meter not found"
+          },
+          "502": {
+            "description": "Portal unreachable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meters/{meter_id}/consumption": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "Get meter consumption",
+        "description": "Retrieve consumption readings for a specific meter.",
+        "operationId": "get_meter_consumption_api_v1_meters__meter_id__consumption_get",
+        "parameters": [
+          {
+            "name": "meter_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Meter Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of consumption readings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConsumptionReading"
+                  },
+                  "title": "Response Get Meter Consumption Api V1 Meters  Meter Id  Consumption Get"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Portal unreachable"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/transformers": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "List transformers",
+        "description": "Retrieve all transformers from the portal.",
+        "operationId": "list_transformers_api_v1_transformers_get",
+        "responses": {
+          "200": {
+            "description": "List of transformers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Transformer"
+                  },
+                  "type": "array",
+                  "title": "Response List Transformers Api V1 Transformers Get"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Portal unreachable"
+          }
+        }
+      }
+    },
+    "/api/v1/hierarchy": {
+      "get": {
+        "tags": [
+          "meters"
+        ],
+        "summary": "Get meter hierarchy",
+        "description": "Retrieve the transformer-to-meter hierarchy from the portal.",
+        "operationId": "get_hierarchy_api_v1_hierarchy_get",
+        "responses": {
+          "200": {
+            "description": "Hierarchy of transformers and their meters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Transformer"
+                  },
+                  "type": "array",
+                  "title": "Response Get Hierarchy Api V1 Hierarchy Get"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Portal unreachable"
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "root"
+        ],
+        "summary": "Root endpoint",
+        "description": "Return service metadata and API documentation link.\n\nReturns:\n    dict[str, str]: Welcome message, version, and docs URL.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Root  Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ConsumptionReading": {
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "Date and time when the reading was recorded"
+          },
+          "kwh_import": {
+            "type": "number",
+            "title": "Kwh Import",
+            "description": "Imported energy in kilowatt-hours"
+          },
+          "kwh_export": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kwh Export",
+            "description": "Exported energy in kilowatt-hours"
+          },
+          "kvah": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kvah",
+            "description": "Apparent energy in kilovolt-ampere-hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "timestamp",
+          "kwh_import"
+        ],
+        "title": "ConsumptionReading",
+        "description": "Model for a single consumption reading entry.\n\nAttributes:\n    timestamp: Date and time when the reading was recorded.\n    kwh_import: Imported energy in kilowatt-hours.\n    kwh_export: Exported energy in kilowatt-hours (optional).\n    kvah: Apparent energy in kilovolt-ampere-hours (optional).",
+        "example": {
+          "kvah": 13000.0,
+          "kwh_export": 500.0,
+          "kwh_import": 12450.5,
+          "timestamp": "2026-07-23T10:30:00"
+        }
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MeterBase": {
+        "properties": {
+          "meter_id": {
+            "type": "string",
+            "title": "Meter Id",
+            "description": "Unique identifier for the meter"
+          },
+          "serial_number": {
+            "type": "string",
+            "title": "Serial Number",
+            "description": "Manufacturer serial number"
+          },
+          "make": {
+            "type": "string",
+            "title": "Make",
+            "description": "Meter manufacturer name"
+          },
+          "phase": {
+            "type": "string",
+            "title": "Phase",
+            "description": "Phase configuration (e.g., Single, Three)"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeterStatus",
+            "description": "Current operational status of the meter"
+          },
+          "dt_id": {
+            "type": "string",
+            "title": "Dt Id",
+            "description": "Distribution transformer identifier"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meter_id",
+          "serial_number",
+          "make",
+          "phase",
+          "status",
+          "dt_id"
+        ],
+        "title": "MeterBase",
+        "description": "Base model for meter data with common fields.\n\nAttributes:\n    meter_id: Unique identifier for the meter.\n    serial_number: Manufacturer serial number.\n    make: Meter manufacturer name.\n    phase: Phase configuration (e.g., Single, Three).\n    status: Current operational status of the meter.\n    dt_id: Distribution transformer identifier.",
+        "example": {
+          "dt_id": "DT-5001",
+          "make": "Electra",
+          "meter_id": "J100001",
+          "phase": "Three",
+          "serial_number": "SN-2024-001",
+          "status": "Installed"
+        }
+      },
+      "MeterDetail": {
+        "properties": {
+          "meter_id": {
+            "type": "string",
+            "title": "Meter Id",
+            "description": "Unique identifier for the meter"
+          },
+          "serial_number": {
+            "type": "string",
+            "title": "Serial Number",
+            "description": "Manufacturer serial number"
+          },
+          "make": {
+            "type": "string",
+            "title": "Make",
+            "description": "Meter manufacturer name"
+          },
+          "phase": {
+            "type": "string",
+            "title": "Phase",
+            "description": "Phase configuration (e.g., Single, Three)"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeterStatus",
+            "description": "Current operational status of the meter"
+          },
+          "dt_id": {
+            "type": "string",
+            "title": "Dt Id",
+            "description": "Distribution transformer identifier"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location",
+            "description": "Meter installation location"
+          },
+          "installation_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Installation Date",
+            "description": "Date when the meter was installed"
+          },
+          "last_reading": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reading",
+            "description": "Most recent meter reading value"
+          },
+          "last_reading_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reading At",
+            "description": "Timestamp of the most recent reading"
+          }
+        },
+        "type": "object",
+        "required": [
+          "meter_id",
+          "serial_number",
+          "make",
+          "phase",
+          "status",
+          "dt_id"
+        ],
+        "title": "MeterDetail",
+        "description": "Detailed meter information including location and readings.\n\nAttributes:\n    location: Physical location or address of the meter installation.\n    installation_date: Date when the meter was installed.\n    last_reading: Most recent meter reading value.\n    last_reading_at: Timestamp of the most recent reading.",
+        "example": {
+          "dt_id": "DT-5001",
+          "installation_date": "2024-03-15",
+          "last_reading": 12450.5,
+          "last_reading_at": "2026-07-23T10:30:00",
+          "location": "Sector 12, Plot 45",
+          "make": "Electra",
+          "meter_id": "J100001",
+          "phase": "Three",
+          "serial_number": "SN-2024-001",
+          "status": "Installed"
+        }
+      },
+      "MeterStatus": {
+        "type": "string",
+        "enum": [
+          "Installed",
+          "Faulty",
+          "Decommissioned"
+        ],
+        "title": "MeterStatus",
+        "description": "Operational status of a meter."
+      },
+      "PaginatedMeters": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MeterBase"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of meter base objects for the current page"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of meters matching the query"
+          },
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current page number (1-indexed)"
+          },
+          "page_size": {
+            "type": "integer",
+            "title": "Page Size",
+            "description": "Number of items per page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "PaginatedMeters",
+        "description": "Paginated response model for meter list endpoints.\n\nAttributes:\n    items: List of meter base objects for the current page.\n    total: Total number of meters matching the query.\n    page: Current page number (1-indexed).\n    page_size: Number of items per page.",
+        "example": {
+          "items": [
+            {
+              "dt_id": "DT-5001",
+              "make": "Electra",
+              "meter_id": "J100001",
+              "phase": "Three",
+              "serial_number": "SN-2024-001",
+              "status": "Installed"
+            }
+          ],
+          "page": 1,
+          "page_size": 25,
+          "total": 150
+        }
+      },
+      "Transformer": {
+        "properties": {
+          "transformer_id": {
+            "type": "string",
+            "title": "Transformer Id",
+            "description": "Unique transformer identifier"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Human-readable name of the transformer"
+          },
+          "capacity_kva": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity Kva",
+            "description": "Rated capacity in kilovolt-amperes"
+          },
+          "meter_count": {
+            "type": "integer",
+            "title": "Meter Count",
+            "description": "Number of meters served by this transformer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transformer_id",
+          "name",
+          "meter_count"
+        ],
+        "title": "Transformer",
+        "description": "Model for transformer data associated with meters.\n\nAttributes:\n    transformer_id: Unique identifier for the transformer.\n    name: Human-readable name of the transformer.\n    capacity_kva: Rated capacity in kilovolt-amperes.\n    meter_count: Number of meters served by this transformer.",
+        "example": {
+          "capacity_kva": 500.0,
+          "meter_count": 25,
+          "name": "TFR-SECTOR-12",
+          "transformer_id": "XFMR-2001"
+        }
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
