@@ -27,7 +27,12 @@ async def get_portal_client() -> AsyncGenerator[UrjaPortalClient, None]:
     The client is automatically closed after the request completes,
     even if an exception occurs during processing.
     """
-    client = UrjaPortalClient()
+    client = UrjaPortalClient(
+        base_url=settings.base_url,
+        username=settings.username,
+        password=settings.password,
+        timeout=settings.request_timeout,
+    )
     logger.debug("Created new portal client for request")
     try:
         yield client
