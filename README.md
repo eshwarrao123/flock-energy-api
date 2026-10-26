@@ -6,7 +6,7 @@ Flock Energy's Urja Meter Ops API is a production-grade FastAPI service that wra
 
 ```bash
 # Clone and enter the project
-git clone <repo-url> flock-energy-api
+git clone flock-energy-api
 cd flock-energy-api
 
 # Create a virtual environment (recommended)
