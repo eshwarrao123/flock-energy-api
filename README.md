@@ -11,10 +11,8 @@ cd flock-energy-api
 
 # Create a virtual environment (recommended)
 python -m venv venv
-venv\Scripts\activate   # Windows: venv\Scripts\activate | Mac/Linux: source venv/bin/activate
-
-# Copy environment file and fill in your portal credentials
-cp .env.example .env
+venv\Scripts\activate
+# Windows: venv\Scripts\activate | Mac/Linux: source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
