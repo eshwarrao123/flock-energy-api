@@ -134,7 +134,7 @@ def parse_meter_detail(html_content: str, meter_id: str) -> MeterDetail:
     """
     soup = BeautifulSoup(html_content, "html.parser")
 
-    # Try to find a detail table or key-value pairs
+    # Try to find a detail table 
     detail_data: dict[str, str] = {}
 
     tables = soup.find_all("table")
