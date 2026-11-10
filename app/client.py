@@ -131,7 +131,6 @@ class UrjaPortalClient:
             logger.error("Login request failed: %s", exc)
             raise
 
-        # Verify session by checking we are not on a login page
         if "login" in str(response.url).lower() and response.status_code != 200:
             logger.warning("Login response still points to login page")
             return False
