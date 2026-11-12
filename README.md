@@ -158,6 +158,8 @@ pytest tests/ -v --cov=app
 
 ## OpenAPI Schema
 
+The OpenAPI specification can be imported into compatible API clients for endpoint exploration and testing.
+
 The OpenAPI schema is available at `/openapi.json` when the server is running. You can also export it without starting the server:
 
 ```bash
