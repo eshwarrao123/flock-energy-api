@@ -15,8 +15,7 @@ venv\Scripts\activate
 Windows: venv\Scripts\activate
 Mac/Linux: source venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+
 
 # Run the development server
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
